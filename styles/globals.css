@@ -1,0 +1,29 @@
+/* TailwindCSS - osnovni stilovi */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  
+  h1, h2 {
+    font-family: 'Arial', sans-serif;
+  }
+
+  /* For larger screens (desktops) */
+@media (min-width: 768px) {
+    .banner {
+      height: 50vh; /* 50% of screen height on desktop */
+    }
+  }
+  
+  /* For smaller screens (mobile devices) */
+  @media (max-width: 767px) {
+    .banner {
+      height: 70vh; /* 70% of screen height on mobile */
+    }
+  }
+  
+  
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
