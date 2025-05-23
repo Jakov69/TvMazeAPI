@@ -1,8 +1,14 @@
+/**
+ * Početna stranica aplikacije koja prikazuje popis popularnih serija.
+ * Omogućuje pretraživanje, sortiranje po popularnosti, datumu i ocjeni, te infinite scroll.
+ */
+
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { fetchPopularShows } from '../utils/api';
 
 export default function Home() {
+  // Stanja za prikaz serija, pretragu, sortiranje i pozadinu
   const [shows, setShows] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -12,16 +18,19 @@ export default function Home() {
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const observer = useRef<IntersectionObserver | null>(null);
+  const observer = useRef<IntersectionObserver | null>(null); // Ref za observer u infinite scrollu
 
   useEffect(() => {
+    // Dohvaća serije prilikom inicijalnog učitavanja i pri promjeni stranice (infinite scroll)
     const loadShows = async () => {
       setLoading(true);
-      const data = await fetchPopularShows(page, 20);
+      const data = await fetchPopularShows(page, 20); // dohvaća 20 popularnih serija po stranici
       if (data.length === 0) {
-        setHasMore(false);
+        setHasMore(false); // Ako nema više podataka, prestani s dohvaćanjem
       } else {
         setShows(prev => [...prev, ...data]);
+
+        // Postavi pozadinsku sliku nasumično iz dohvaćenih podataka
         if (!backgroundImage && data.length > 0) {
           const randomShow = data[Math.floor(Math.random() * data.length)];
           const randomImage = randomShow?.image?.original;
@@ -35,13 +44,19 @@ export default function Home() {
   }, [page]);
 
   const handleSearch = async () => {
+    // Pokreće pretragu ako unos nije prazan
     if (!searchTerm.trim()) return;
     const res = await fetch(`https://api.tvmaze.com/search/shows?q=${searchTerm}`);
     const data = await res.json();
-    const mapped = data.map((item: any) => item.show);
+    const mapped = data.map((item: any) => item.show); // Ekstrakt podataka o seriji
     setSearchResults(mapped);
   };
 
+  /**
+   * Sortira serije po željenom kriteriju:
+   * - 'latest' sortira po datumu premijere (najnovije prve)
+   * - 'top' sortira po ocjeni korisnika (najviše ocjene prve)
+   */
   const getFilteredShows = () => {
     let sorted = [...shows];
     if (sortBy === 'latest') {
@@ -52,6 +67,10 @@ export default function Home() {
     return sorted;
   };
 
+  /**
+   * Ref callback za posljednji element u listi, koristi IntersectionObserver
+   * za pokretanje učitavanja nove stranice (infinite scroll).
+   */
   const lastShowRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (loading) return;
@@ -68,63 +87,62 @@ export default function Home() {
 
   return (
     <div className="min-h-screen text-white bg-black">
+
+      {/* Pozadinska slika s detaljima serije ako postoji */}
       {backgroundImage && backgroundDetails && (
-  backgroundDetails.officialSite ? (
-    <a
-      href={backgroundDetails.officialSite}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="w-full block relative"
-      style={{ height: '50vh' }}
-    >
-      <div
-        className="absolute inset-0 bg-black bg-opacity-50"
-      />
-      <div
-        className="w-full h-full bg-cover bg-center"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
-      />
-      <div className="absolute bottom-4 left-4 text-white p-4 bg-black bg-opacity-50 rounded-lg">
-        <h2 className="text-2xl font-semibold">{backgroundDetails.name}</h2>
-        {backgroundDetails.rating?.average && (
-          <p className="mt-2 text-lg">⭐ {backgroundDetails.rating.average}</p>
-        )}
-        {backgroundDetails.runtime && (
-          <p className="mt-2 text-lg">{backgroundDetails.runtime} min</p>
-        )}
-      </div>
-    </a>
-  ) : (
-    <div
-      className="w-full relative"
-      style={{
-        backgroundImage: `url(${backgroundImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        height: '50vh',
-      }}
-    >
-      <div className="absolute inset-0 bg-black bg-opacity-50" />
-      <div className="absolute bottom-4 left-4 text-white p-4 bg-black bg-opacity-50 rounded-lg">
-        <h2 className="text-2xl font-semibold">{backgroundDetails.name}</h2>
-        {backgroundDetails.rating?.average && (
-          <p className="mt-2 text-lg">⭐ {backgroundDetails.rating.average}</p>
-        )}
-        {backgroundDetails.runtime && (
-          <p className="mt-2 text-lg">{backgroundDetails.runtime} min</p>
-        )}
-      </div>
-    </div>
-  )
-)}
+        backgroundDetails.officialSite ? (
+          <a
+            href={backgroundDetails.officialSite}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full block relative"
+            style={{ height: '50vh' }}
+          >
+            <div className="absolute inset-0 bg-black bg-opacity-50" />
+            <div
+              className="w-full h-full bg-cover bg-center"
+              style={{ backgroundImage: `url(${backgroundImage})` }}
+            />
+            <div className="absolute bottom-4 left-4 text-white p-4 bg-black bg-opacity-50 rounded-lg">
+              <h2 className="text-2xl font-semibold">{backgroundDetails.name}</h2>
+              {backgroundDetails.rating?.average && (
+                <p className="mt-2 text-lg">⭐ {backgroundDetails.rating.average}</p>
+              )}
+              {backgroundDetails.runtime && (
+                <p className="mt-2 text-lg">{backgroundDetails.runtime} min</p>
+              )}
+            </div>
+          </a>
+        ) : (
+          <div
+            className="w-full relative"
+            style={{
+              backgroundImage: `url(${backgroundImage})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              height: '50vh',
+            }}
+          >
+            <div className="absolute inset-0 bg-black bg-opacity-50" />
+            <div className="absolute bottom-4 left-4 text-white p-4 bg-black bg-opacity-50 rounded-lg">
+              <h2 className="text-2xl font-semibold">{backgroundDetails.name}</h2>
+              {backgroundDetails.rating?.average && (
+                <p className="mt-2 text-lg">⭐ {backgroundDetails.rating.average}</p>
+              )}
+              {backgroundDetails.runtime && (
+                <p className="mt-2 text-lg">{backgroundDetails.runtime} min</p>
+              )}
+            </div>
+          </div>
+        )
+      )}
 
-
-      {/* Header */}
+      {/* Header + Search + Filteri */}
       <div className="sticky top-0 z-10 bg-black bg-opacity-80 backdrop-blur-md px-4 py-6">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-xl font-bold text-center mb-4">🎬 TV Shows Explorer</h1>
 
-          {/* Search */}
+          {/* Search polje i gumb */}
           <div className="flex justify-center mb-4 flex-nowrap overflow-x-auto gap-2 sm:gap-4">
             <input
               type="text"
@@ -141,14 +159,14 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Filters */}
+          {/* Filter gumbi za sortiranje */}
           <div className="flex justify-center flex-wrap gap-2 mb-4">
             {['popular', 'latest', 'top'].map((type) => (
               <button
                 key={type}
                 onClick={() => {
                   setSortBy(type as any);
-                  setSearchResults([]);
+                  setSearchResults([]); // resetiraj pretragu pri promjeni filtera
                 }}
                 className={`px-3 py-1 text-sm rounded-full border transition ${
                   sortBy === type
@@ -163,6 +181,7 @@ export default function Home() {
             ))}
           </div>
 
+          {/* Link na Favorite */}
           <div className="text-center">
             <Link href="/favorites">
               <button className="px-6 py-2 bg-green-500 text-black rounded-full hover:bg-green-400 transition">
@@ -173,7 +192,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Content */}
+      {/* Grid prikaz rezultata */}
       <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {(searchResults.length > 0 ? searchResults : getFilteredShows()).map((show: any, index: number) => {
           const isLast = index === getFilteredShows().length - 1;
@@ -184,21 +203,21 @@ export default function Home() {
               onClick={() => (window.location.href = `/shows/${show.id}`)}
               className="relative bg-white bg-opacity-10 backdrop-blur-md border border-gray-700 rounded-lg shadow-lg overflow-hidden hover:scale-105 transition cursor-pointer"
             >
-              {/* Rating */}
+              {/* Ocjena */}
               {show.rating?.average && (
                 <div className="absolute top-2 right-2 bg-white bg-opacity-25 backdrop-blur-md px-2 py-1 rounded">
                   <p className="text-white text-sm font-semibold">⭐ {show.rating.average}</p>
                 </div>
               )}
 
-              {/* Image */}
+              {/* Slika serije */}
               <img
                 src={show.image?.medium || '/default-image.jpg'}
                 alt={show.name}
                 className="w-full h-[250px] object-cover"
               />
 
-              {/* Title */}
+              {/* Naziv serije */}
               <div className="absolute bottom-0 left-0 right-0 bg-white bg-opacity-25 backdrop-blur-md p-2 m-2 rounded">
                 <h2 className="text-sm font-bold text-white text-center">{show.name}</h2>
               </div>
@@ -207,6 +226,7 @@ export default function Home() {
         })}
       </div>
 
+      {/* Indikator učitavanja */}
       {loading && (
         <div className="text-center text-gray-400 py-6">Loading more shows...</div>
       )}
